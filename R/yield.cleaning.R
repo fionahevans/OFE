@@ -196,7 +196,7 @@ clean.geometry <- function(
 #' Remove points near paddock boundary
 #'
 #' @param yield Input yield SpatialPointsDataFrame with column 'yield'
-#' @param distance Distance threshold from paddock boundary
+#' @param distance Distance threshold (units as per CRS of yield) from paddock boundary 
 #' @param plot TRUE/FALSE Plot yield data and detected errors
 #' @param col colors for plotting
 #'
