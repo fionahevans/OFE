@@ -1,27 +1,36 @@
-agric:  R package containing functions for accessing & handling agricultural data.
+OFE:  R package containing functions for analysis of data from large on-farm experiments.
 ====================================================
 
-Functions:
-* SMSyieldCSV: Read yield data from CSV file exported from SMS Advanced software
-* swQuery: Query the SkyWatch API for satellite imagery and climate/atmospheric datasets
-* swDate: Convert time from SkyWatch API query to a Date object
-* swDownload: Download Landsat data using the SkyWatch API and save bands as a raster stack
-* getLandsat8LL:	Download Landsat data using the SkyWatch API and save bands as a raster stack
-* getLandsat8UTM:	Download Landsat data using the SkyWatch API and save bands as a raster stack
-* qfilter:
-* grid:	Interpolate data to a grid by kriging and mask using the convex hull of the data
-* gwrgrid:	Perform geographically weighted regression on gridded data
-* gaussianKernel: Return a 2d array of gaussian weights for use in gwrgrid
+Functions for cleaning yield monitor data:
+* clean: Clean yield data.
+* clean.flow: Correct flow delay errors.
+* clean.geometry: Remove geometry duplicates.
+* clean.lags: Remove timelags.
+* clean.outliers: Remove yiled outliers.
+* clean.overlaps: Correct for harvester overlaps (EXPERIMENTAL)
+* clean.velocity: Remove velocity outliers and rapid changes in velocity
+* clean.width: Remove harvest overlaps identifeid by small swath width measurements
 
-APIs for accessing SkyWatch functions are slight modificationson functions from R package 'SkyWatchr'. See the SkyWatchr::querySW help for details on usage.
+Functions for performing ordinary co-kriging for OFE using gstat:
+* global.cokrig: Global standardised ordinary co-kriging for OFE using gstat.
+* local.cokrig: Local standardised ordinary co-kriging for OFE using gstat.
+* cokrig.regression: Performs local linear regressions on co-kriged OFE data.
 
-Planned future functionality:
-* extension of gwrgrid to allow for moving window application of any specified R function
+Functions for plotting data
+* color.of: Makes colors for plotting.
+* legend.col: Creates a color legend.
+* two.colors.old: Older version of 'two.colors' from package 'fields' (less of the middle colour present)
+* plot.sim: Plot simulated OFE SpatialPointsDataFrame (as raster).
+* plot.cokrig: Plot co-kriged predictions for simulated data.
+* plot.cokrig.regression: Plot co-kriged regression results.
+
+Functions for making interpolated raster maps from point data:
+* spatial.interp.inla: Int.erpolate to a grid using R-INLA
 
 
-## Note:
-To compile this package, ensure that the follwoing lines are added to the NAMESPACE file:
-```
-useDynLib(agric)
-importFrom(Rcpp, sourceCpp)
-```
+Data:
+* barley.yield: Sample yield monitor data.
+* data.linear: Simulated data with global linear response.
+* data.linear.zones: Simulated data with linear response that varies for three different zones.
+* data.linear.local: 	Simulated data with locally-varying linear response
+
