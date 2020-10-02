@@ -34,10 +34,3 @@ Data:
 * data.linear.zones: Simulated data with linear response that varies for three different zones.
 * data.linear.local: 	Simulated data with locally-varying linear response
 
-
-## Note:
-To compile this package, ensure that the follwoing lines are added to the NAMESPACE file:
-```
-useDynLib(agric)
-importFrom(Rcpp, sourceCpp)
-```
