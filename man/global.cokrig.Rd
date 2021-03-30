@@ -18,7 +18,7 @@ global.cokrig(data, pred.points, yvar = "yield", xvar = "treatment",
 
 \item{cutoff}{maxium distance for variogram estimation (see variogram help).}
 
-\item{width}{width of treatments for calculatign cutoff.}
+\item{width}{width of treatments for calculating cutoff.}
 
 \item{predpts}{SpatialPointsDataFrame coordinates to predict at.}
 }

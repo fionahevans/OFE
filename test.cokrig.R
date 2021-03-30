@@ -21,7 +21,7 @@ bw <- width * (nt - 1) / 2
 
 # Distance to include all treatments
 # max.dist is Euclidean distance, for this data distance = equals number of pixels
-max.dist <- width * (nt - 1) + 1
+max.dist <- treatment.distance(data, yvar = "yield", xvar = "treatment")
 
 model <- "Sph"
 

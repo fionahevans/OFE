@@ -11,7 +11,7 @@ clean.boundary(yield, distance = 10, plot = FALSE,
 \arguments{
 \item{yield}{Input yield SpatialPointsDataFrame with column 'yield'}
 
-\item{distance}{Distance threshold from paddock boundary}
+\item{distance}{Distance threshold (units as per CRS of yield) from paddock boundary}
 
 \item{plot}{TRUE/FALSE Plot yield data and detected errors}
 

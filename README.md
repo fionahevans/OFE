@@ -25,7 +25,7 @@ Functions for plotting data
 * plot.cokrig.regression: Plot co-kriged regression results.
 
 Functions for making interpolated raster maps from point data:
-* spatial.interp.inla: Int.erpolate to a grid using R-INLA
+* spatial.interp.inla: Interpolate to a grid using R-INLA
 
 
 Data:

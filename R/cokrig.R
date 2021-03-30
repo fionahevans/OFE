@@ -1,6 +1,48 @@
-# https://github.com/CSIRO-Precision-Agriculture/PAT_QGIS_Plugin/blob/master/pat/R-Scripts/_cokrige_Whole_of_Block_Analysis.R
-# https://publications.csiro.au/rpr/download?pid=csiro:EP194679&dsid=DS5
-# https://usermanual.wiki/Document/PATUserManual.1711714387/html
+#' Minimum distance covering all treatments.
+#' 
+#' Determines minimum distance that includes all treatments from all data points.
+#'
+#' @param data SpatialPointsDataFrame containing input data.
+#' @param yvar name of variable to predict.
+#' @param xvar name of treament variable.
+#'
+#' @author Fiona Evans
+#' 
+#' @return Returns numeric distance. 
+#' @export
+treatment.distance <- function(data, yvar = "yield", xvar = "treatment"){
+  # Treatments
+  treatments <- sort(unique(data@data[,xvar]))
+  nt <- length(treatments)
+  
+  # Distances between data points
+  d.gr <- fields::rdist(coordinates(data), coordinates(data))
+  
+  distances <- as.numeric(nrow(data))
+  distances[1] <- 1
+  
+  # Loop through prediction points, estimate local variogram and predict
+  for (i in 1:nrow(data)) {
+    if (i %% 100 == 0) cat(i, "of", nrow(data), "\n")
+    
+    dmin <- 9999999999
+    max.dist <- max(distances, na.rm=T)
+    while (max.dist < dmin) {
+      tmp <- which(d.gr[, i] <= max.dist)
+      dat <-  data[tmp, ]
+      # Check all treatments included 
+      n <- table(dat@data[, xvar])
+      if (any(n < 1) || length(n) < nt) { 
+        max.dist <- max.dist + 1
+      } 
+      else {
+        dmin <- max.dist
+      }
+    }
+    distances[i] <- max.dist 
+  }
+  max(distances)
+}
 
 
 #' Global standardised ordinary co-kriging for OFE using gstat.
@@ -9,11 +51,11 @@
 #'
 #' @param data SpatialPointsDataFrame containing input data.
 #' @param predpts  SpatialPointsDataFrame coordinates to predict at.
-#' @param yvar name of varaible to predict.
+#' @param yvar name of variable to predict.
 #' @param xvar name of treament variable.
 #' @param model model type, e.g. "Exp", "Sph", "Gau", "Mat" (see gstat help).
 #' @param cutoff maxium distance for variogram estimation (see variogram help).
-#' @param width width of treatments for calculatign cutoff.
+#' @param width width of treatments for calculating cutoff.
 #'
 #' @author Fiona Evans
 #' 
@@ -72,7 +114,7 @@ global.cokrig <- function(data, pred.points, yvar = "yield", xvar = "treatment",
 #'
 #' @param data SpatialPointsDataFrame containing input data.
 #' @param predpts  SpatialPointsDataFrame coordinates to predict at.
-#' @param yvar name of varaible to predict.
+#' @param yvar name of variable to predict.
 #' @param xvar name of treament variable
 #' @param model model type, e.g. "Exp", "Sph", "Gau", "Mat" (see gstat help).
 #' @param max.dist Distance threshold specifying local neighbourhood for around a prediction point,
@@ -90,30 +132,70 @@ local.cokrig <- function(data, pred.points, yvar = "yield", xvar = "treatment",
   treatments <- sort(unique(data@data[,xvar]))
   nt <- length(treatments)
   
+  # Make separate columns for each treatment
+  nms <- rep(NA, nt)
+  for (i in 1:nt) {
+    nm <- paste0(xvar, treatments[i])
+    nms[i] <- nm
+    data@data[, nm] <- rep(NA, nrow(data))
+    j <- data@data[,xvar] == treatments[i]
+    data@data[j, nm] <- data@data[j, yvar]
+  }
+  
+  global.cokrig0 <- function(data, pred.points, nms, max.dist, yvar, xvar, model){
+    
+    g <- gstat(NULL, nms[1], form = as.formula(paste(nms[1], '~' ,1)), 
+               data = data[data@data[, xvar] == treatments[1],], 
+               set = list(nocheck = 1))
+    for (i in 2:nt) {
+      g <- gstat(g, nms[i], form = as.formula(paste(nms[i], '~' ,1)), 
+                 data = data[data@data[, xvar] == treatments[i],], 
+                 set = list(nocheck = 1))
+    }
+    
+    
+    # Estimate variogram
+    nBins    <- 20;
+    v0 <- variogram(g, cutoff = max.dist, width = max.dist/nBins)
+    v <- fit.lmc(v = v0, g = g, vgm(model = model))
+    
+    # Predict (hiding gstat print statements)
+    invisible(capture.output(p <- predict(v, pred.points)))
+    p
+  }
+  
   # Distances between data and pred.points
   d.gr <- fields::rdist(coordinates(data), coordinates(pred.points))
   
-  # Return object
+  # Object to return
   ret <- matrix(NA, nrow = ncol(d.gr), 
                 ncol = 2 + nt*2 + factorial(nt) / factorial(nt-2)/factorial(2))
   
+  
   # Loop through prediction points, estimate local variogram and predict
   for (i in 1:ncol(d.gr)) {
-    #cat(i, "\n")
+    if (i %% 100 == 0) cat(i, "of", ncol(d.gr), "\n")
     
     tmp <- which(d.gr[, i] <= max.dist)
     dat <-  data[tmp, ]
     
     # Check all treatments included 
     n <- table(dat@data[, xvar])
-    try( if (any(n < 2) || length(n) < nt) stop("Error: 'max.dist too small."))
-    
-    z <- as.data.frame(global.cokrig(dat, pred.points[i,], yvar, xvar, model, cutoff = max.dist))[1, ]
+    if (any(n < 2) || length(n) < nt) z <- c(coordinates(pred.points)[i, 1], 
+                                             coordinates(pred.points)[i, 2],
+                                             rep(NA, ncol(ret)-2)) 
+    else {
+      invisible(capture.output(z <- as.data.frame(global.cokrig0(dat, pred.points[i,], 
+                       nms, max.dist, yvar, xvar, model))[1, ]))
+      nmsz <- names(z)
+    }
     
     ret[i, ] <- as.numeric(z)
   }
+  
+  # Convert to SpatialPointsDataFrame
   ret <- as.data.frame(ret)
-  names(ret) <- names(z)
+  names(ret) <- nmsz
   coordinates(ret) <- ~x + y
   
   ret
